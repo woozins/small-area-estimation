@@ -1,0 +1,26 @@
+{
+    "id": "9C7991B2",
+    "path": "~/sae/analysis/samplers_functions.R",
+    "project_path": "analysis/samplers_functions.R",
+    "type": "r_source",
+    "hash": "20752116",
+    "contents": "",
+    "dirty": false,
+    "created": 1756100430363.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "source_window_id": "wyha1gzt8x311",
+        "Source": "Source",
+        "cursorPosition": "250,41",
+        "scrollLine": "0"
+    },
+    "folds": "2|1|61|0|\n64|1|126|0|\n129|1|170|0|\n",
+    "lastKnownWriteTime": 1755877645,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1756100440959,
+    "read_only": false,
+    "read_only_alternatives": []
+}

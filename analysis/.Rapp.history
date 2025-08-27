@@ -1,0 +1,2563 @@
+AAD
+ASD
+ARB
+ASRB
+plot(Sigma2.chain)
+acf(Sigma2.chain)
+load("/Users/xueyingtang/Documents/Research_Ghosh/SAE/data_code/data1_results.RData")
+ls()
+names(FH_results)
+plot(FH_results$Sigma2.chain)
+mean(FH_results$Sigma2.chain)
+mean(Sigma2.chain)
+plot(Beta.chain[1,])
+plot(theta.true, theta.est)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 2#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	# Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	# acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	# if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	Sigma2 <- 5#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 2#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	# Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	# acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	# if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	Sigma2 <- 1#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+alpha <- 5 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 1#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	# Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	# acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	# if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	Sigma2 <- 1#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 5 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 1#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	# Sigma2 <- 1#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+plot(Sigma2.chain)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 5 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 1#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	# Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	# acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	# if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	Sigma2 <- 1#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 5 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 1#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	# Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	# acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	# if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 1 # parameters for inverse gamma priors on sigma2#
+para2 <- 1#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	# Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	# acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	# if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 0.001 # parameters for inverse gamma priors on sigma2#
+para2 <- 0.001#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	Sigma2_prop <- 1/rgamma(1, para1, para2)#
+	acp_rate <- p2q_ratio(Sigma2_prop, U, alpha) / p2q_ratio(Sigma2, U, alpha)#
+	if (runif(1) < acp_rate) Sigma2 <- Sigma2_prop#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+plot(Sigma2.chain)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 0.001 # parameters for inverse gamma priors on sigma2#
+para2 <- 0.001#
+#
+Beta <- rep(0, p)#
+U <- rep(0, m)#
+Sigma2 <- 1#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			B_u <- D[j]/(D[j] + Sigma2)#
+			U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		}#
+		else#
+		{#
+			U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		}#
+	}#
+	# update sigma2;#
+	U_0 <- unique(U)#
+	K <- length(U_0)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_0^2)/2)#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+plot(Sigma2.chain)
+plot(log(Sigma2.chain))
+dim(U.chain)
+unique(U.chain[,600])
+unique(U.chain[,3500])
+unique(U.chain[,4900])
+sum(unique(U.chain[,4900])^2)
+sum(unique(U.chain[,3500])^2)
+unique(U.chain[,3500])
+unique(U.chain[,3501])
+hist(Sigma2.chain)
+mean(Sigma2.chain[Sigma2.chain < 1000])
+plot(Sigma2.chain[Sigma2.chain < 1000])
+mean(Sigma2.chain[Sigma2.chain < 100])
+plot(Sigma2.chain[Sigma2.chain < 100])
+plot(Sigma2.chain[Sigma2.chain < 10])
+plot(Sigma2.chain[Sigma2.chain < 1])
+plot(Sigma2.chain[Sigma2.chain < 0.1])
+C <- sample(1:m, m, replace=TRUE)
+C
+unique(C)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 0.001 # parameters for inverse gamma priors on sigma2#
+para2 <- 0.001#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rnorm(m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u and C#
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample(1:m[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}
+C[-j]
+unique(C[-j])
+[-unique(C[-j])]
+-unique(C[-j])
+(1:m)[-unique(C[-j])]
+sample((1:m)[-unique(C[-j])], 1)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 0.001 # parameters for inverse gamma priors on sigma2#
+para2 <- 0.001#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rnorm(m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u and C#
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+plot(Sigma2.chain)
+acf(Sigma2.chain)
+plot(Beta.chain[1,])
+acf(Beta.chain[1,])
+plot(apply(U.chain,1,mean))
+sum(abs(theta.est-theta.true)/theta.true < 0.02)
+sum(abs(theta.est-theta.true) < 0.02)
+theta.true
+sum(abs(theta.est-theta.true) < 2)
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+K
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 0.001 # parameters for inverse gamma priors on sigma2#
+para2 <- 0.001#
+#
+set.seed(12345)#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rnorm(m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+p2q_ratio <- function(Sigma2, U, alpha)#
+{#
+	m <- length(U)#
+	res <- dnorm(U[1], mean=0, sd=sqrt(Sigma2))#
+	for (i in 2:m)#
+	{#
+		res <- res * (alpha * dnorm(U[i], mean=0, sd=sqrt(Sigma2)) + sum(U[1:(i-1)]==U[i]))/(alpha + i - 1)#
+	}#
+	res#
+}#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%1000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+AAD
+ASD
+ARB
+ASRB
+plot(Sigma2.chain)
+plot(Sigma2.chain[2501:3000])
+plot(Sigma2.chain[2801:2900])
+plot(Sigma2.chain[2841:2850])
+plot(Sigma2.chain[2801:2900])
+plot(Sigma2.chain[2841:2860])
+plot(Sigma2.chain[2851:2860])
+Sigma2.chain[2852]
+U.chain[1367504]
+U.chain[,1367504]
+U.chain[,2852]
+unique(U.chain[,2852])
+set.seed(12345)#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)
+AAD
+ASD
+ARB
+ASRB
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+plot(apply(U.chain, 1, mean))
+plot(Sigma2.chain)
+DP_results <- list(Y=Y, X=X, m=m, D=D, Theta.chain=Theta.chain, Beta.chain=Beta.chain, U.chain=U.chain, Sigma2.chain=Sigma2.chain)
+save(DP_results, file="SAE_data1_DP_results")
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data2.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$x)#
+Y <- mydata$y#
+D <- mydata$D#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+alpha <- 1 # parameter for Dirichlet process#
+para1 <- 0.001 # parameters for inverse gamma priors on sigma2#
+para2 <- 0.001#
+#
+set.seed(12345)#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# Sigma2 <- 0.01#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+	}#
+}
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+para1 <- 0.001 # parameters for inverse gamma prior on sigma2#
+para2 <- 0.001#
+#
+para3 <- 0.001 # parameters for gamma prior on alpha#
+para4 <- 0.001#
+#
+set.seed(12345)#
+#
+# initialization#
+#
+alpha <- 1 # parameter for Dirichlet process#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+Alpha.chain <- rep(0, nsim/nthin)#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# update alpha#
+	eta <- rbeta(alpha+1, m)#
+	w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))#
+	delta_alpha <- rbinom(1, 1, w_alpha)#
+	if (delta_alpha == 1) alpha <- rgamma(1, para3+K, para4-log(eta))#
+	else alpha <- rgamma(1, para3+K-1, para4-log(eta))#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+		Alpha.chain[(i-nburn)/nthin] = alpha#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+para1 <- 0.001 # parameters for inverse gamma prior on sigma2#
+para2 <- 0.001#
+#
+para3 <- 0.001 # parameters for gamma prior on alpha#
+para4 <- 0.001#
+#
+set.seed(12345)#
+#
+# initialization#
+#
+alpha <- 1 # parameter for Dirichlet process#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+Alpha.chain <- rep(0, nsim/nthin)#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# update alpha#
+	eta <- rbeta(1, alpha+1, m)#
+	w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))#
+	delta_alpha <- rbinom(1, 1, w_alpha)#
+	if (delta_alpha == 1) alpha <- rgamma(1, para3+K, para4-log(eta))#
+	else alpha <- rgamma(1, para3+K-1, para4-log(eta))#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+		Alpha.chain[(i-nburn)/nthin] = alpha#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+plot(Alpha.chain)
+mean(Alpha.chain)
+hist(Alpha.chain)
+plot(Sigma2.chain)
+alpha
+eta <- rbeta(1, alpha+1, m)
+eta
+w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))
+w_alpha
+delta_alpha <- rbinom(1, 1, w_alpha)
+delta_alpha
+rgamma(1, para3+K, para4-log(eta))
+rgamma(1, para3+K-1, para4-log(eta))
+para3+K
+para4-log(eta)
+rgamma(0.001, 3.76)
+rgamma(1, 0.001, 3.76)
+rgamma(1, 0.001, 3.76)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+para1 <- 0.001 # parameters for inverse gamma prior on sigma2#
+para2 <- 0.001#
+#
+para3 <- 1 # parameters for gamma prior on alpha#
+para4 <- 1#
+#
+set.seed(12345)#
+#
+# initialization#
+#
+alpha <- 1 # parameter for Dirichlet process#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+Alpha.chain <- rep(0, nsim/nthin)#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# update alpha#
+	eta <- rbeta(1, alpha+1, m)#
+	w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))#
+	delta_alpha <- rbinom(1, 1, w_alpha)#
+	if (delta_alpha == 1) alpha <- rgamma(1, para3+K, para4-log(eta))#
+	else alpha <- rgamma(1, para3+K-1, para4-log(eta))#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+		# Alpha.chain[(i-nburn)/nthin] = alpha#
+	}#
+}
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+plot(Alpha.chain)
+rbeta(1, alpha+1, m)
+rbeta(1, alpha+1, m)
+w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))
+w_alpha
+rgamma(1, para3+K, para4-log(eta))
+rgamma(1, para3+K-1, para4-log(eta))
+alpha
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+para1 <- 0.1 # parameters for inverse gamma prior on sigma2#
+para2 <- 0.1#
+#
+para3 <- 1 # parameters for gamma prior on alpha#
+para4 <- 1#
+#
+set.seed(12345)#
+#
+# initialization#
+#
+alpha <- 1 # parameter for Dirichlet process#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+Alpha.chain <- rep(0, nsim/nthin)#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# update alpha#
+	eta <- rbeta(1, alpha+1, m)#
+	w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))#
+	delta_alpha <- rbinom(1, 1, w_alpha)#
+	if (delta_alpha == 1) alpha <- rgamma(1, para3+K, para4-log(eta))#
+	else alpha <- rgamma(1, para3+K-1, para4-log(eta))#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+		Alpha.chain[(i-nburn)/nthin] = alpha#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+plot(Alpha.chain)
+mean(Alpha.chain)
+plot(Alpha.chain, type="l")
+acf(Alpha.chain)
+plot(Sigma2.chain)
+AAD
+ASD
+ARB
+ASRB
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+para1 <- 0.001 # parameters for inverse gamma prior on sigma2#
+para2 <- 0.001#
+#
+para3 <- 1 # parameters for gamma prior on alpha#
+para4 <- 1#
+#
+set.seed(12345)#
+#
+# initialization#
+#
+alpha <- 1 # parameter for Dirichlet process#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+Alpha.chain <- rep(0, nsim/nthin)#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# update alpha#
+	eta <- rbeta(1, alpha+1, m)#
+	w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))#
+	delta_alpha <- rbinom(1, 1, w_alpha)#
+	if (delta_alpha == 1) alpha <- rgamma(1, para3+K, para4-log(eta))#
+	else alpha <- rgamma(1, para3+K-1, para4-log(eta))#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+		Alpha.chain[(i-nburn)/nthin] = alpha#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+AAD
+ASD
+ARB
+ASRB
+mean(Alpha.chain)
+quantile(Alpha.chain, probs=c(0.025, 0.5, 0.975))
+plot(density(Alpha.chain))
+abline(v=1)
+median(Alpha.chain)
+DP_results <- list(Y=Y, X=X, m=m, D=D, Theta.chain=Theta.chain, Beta.chain=Beta.chain, U.chain=U.chain, Sigma2.chain=Sigma2.chain, Alpha.chain=Alpha.chain)
+save(DP_results, file="SAE_data1_DP_results")
+plot(Sigma2.chain)
+rm(list=ls())#
+#
+library(MASS)#
+#
+mydata <- read.table(file="data1.txt", header=TRUE)#
+#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$X1, mydata$X2, mydata$X3)#
+Y <- mydata$Y#
+D <- mydata$d#
+p <- ncol(X)#
+#
+nburn <- 50000#
+nsim <- 50000#
+nthin <- 10#
+nsize <- nsim/nthin#
+#
+para1 <- 10^-10 # parameters for inverse gamma prior on sigma2#
+para2 <- 10^-10#
+#
+para3 <- 1 # parameters for gamma prior on alpha#
+para4 <- 1#
+#
+set.seed(12345)#
+#
+# initialization#
+#
+alpha <- 1 # parameter for Dirichlet process#
+#
+Beta <- rep(0, p)#
+Sigma2 <- 1#
+#
+U_0 <- rep(0, m)#
+C <- sample(1:m, m, replace=TRUE)#
+U <- U_0[C]#
+#
+Theta <- X%*%Beta + U#
+#
+Beta.chain <- array(0, dim=c(p, nsim/nthin))#
+Sigma2.chain <- rep(0, nsim/nthin)#
+U.chain <- array(0, dim=c(m, nsim/nthin))#
+Alpha.chain <- rep(0, nsim/nthin)#
+#
+for (i in 1:(nburn+nsim))#
+{#
+	if (i%%10000==0) cat(i,"\n")#
+	# update beta#
+	Xstd <- X/sqrt(D)#
+	sigma <- solve(t(Xstd)%*%Xstd)#
+	mean <- apply(X*(Y-U)/D,2,sum)#
+	mean <- sigma%*%mean#
+	Beta <- mvrnorm(1, mu=mean,Sigma=sigma)#
+	# update u #
+	# for (j in 1:m)#
+	# {#
+		# w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		# w_u <- alpha/(alpha + sum(w_u_vec))#
+		# delta_u <- rbinom(1, 1, w_u)#
+		# if (delta_u == 1) #
+		# {#
+			# B_u <- D[j]/(D[j] + Sigma2)#
+			# U[j] <- rnorm(1, (1-B_u)*(Y[j] - sum(X[j,]*Beta)), (1-B_u)*D[j])#
+		# }#
+		# else#
+		# {#
+			# U[j] <- sample(U[-j], 1, prob=w_u_vec)#
+		# }#
+	# }#
+	# update u using clustering#
+	for (j in 1:m)#
+	{#
+		w_u_vec <- sqrt(1 + Sigma2/D[j]) * exp(-0.5 * (Y[j] - sum(X[j,]*Beta) - U[-j])^2 / D[j] + 0.5*(Y[j] - sum(X[j,]*Beta))^2 / (D[j]+Sigma2))#
+		w_u <- alpha/(alpha + sum(w_u_vec))#
+		delta_u <- rbinom(1, 1, w_u)#
+		if (delta_u == 1) #
+		{#
+			C[j] <- sample((1:m)[-unique(C[-j])], 1)#
+		}#
+		else#
+		{#
+			C[j] <- sample(C[-j], 1, prob=w_u_vec)#
+		}  #
+	}#
+	C_0 <- unique(C)#
+	K <- length(C_0)#
+	for (k in 1:K)#
+	{#
+		C_k <- which(C==C_0[k])#
+		var_k <- 1/(sum(1/D[C_k]) + 1/Sigma2)#
+		mean_k <- var_k * sum((Y[C_k] - X[C_k,] %*% Beta)/D[C_k])#
+		U_0[C_0[k]] <- rnorm(1, mean_k, sqrt(var_k))#
+	}	#
+    U <- U_0[C]#
+	# update sigma2;#
+	U_K <- unique(U)#
+	Sigma2 <- 1/rgamma(1, para1+K/2, para2+sum(U_K^2)/2)#
+	# update alpha#
+	eta <- rbeta(1, alpha+1, m)#
+	w_alpha <- 1/(1+m*(para4-log(eta))/(para3+K-1))#
+	delta_alpha <- rbinom(1, 1, w_alpha)#
+	if (delta_alpha == 1) alpha <- rgamma(1, para3+K, para4-log(eta))#
+	else alpha <- rgamma(1, para3+K-1, para4-log(eta))#
+	if (i > nburn && (i-nburn)%%nthin==0)#
+	{#
+		Sigma2.chain[(i-nburn)/nthin] = Sigma2#
+		U.chain[,(i-nburn)/nthin] = U#
+		Beta.chain[,(i-nburn)/nthin] = Beta	#
+		Alpha.chain[(i-nburn)/nthin] = alpha#
+	}#
+}#
+#
+Theta.chain <- X%*%Beta.chain#
+theta.est <- apply(Theta.chain, 1, mean)#
+theta.true <- scan("data1_theta0.txt")#
+#
+AAD <- mean(abs(theta.est-theta.true))#
+ASD <- mean((theta.est-theta.true)^2)#
+ARB <- mean(abs(theta.est-theta.true)/abs(theta.true))#
+ASRB <- mean((theta.est-theta.true)^2/theta.true^2)#
+#
+dic <- function(Y, Theta.chain, D)#
+{#
+	n <- dim(Theta.chain)[2]#
+	Theta.est <- apply(Theta.chain, 1, mean)#
+	D.chain <- rep(0, n)#
+	for (i in 1:n) D.chain[i] <- -2*sum(dnorm(Y, mean=Theta.chain[,i], sd=sqrt(D), log=TRUE))#
+	D.thetabar <- -2*sum(dnorm(Y, mean=Theta.est, sd=sqrt(D), log=TRUE))#
+	2*mean(D.chain) - D.thetabar#
+}#
+#
+dic(Y, Theta.chain, D)
+AAD
+ASD
+ARB
+ASRB
+DP_results <- list(Y=Y, X=X, m=m, D=D, Theta.chain=Theta.chain, Beta.chain=Beta.chain, U.chain=U.chain, Sigma2.chain=Sigma2.chain, Alpha.chain=Alpha.chain)#
+save(DP_results, file="SAE_data1_DP_results")
+library("maptools")
+shp <- readShapePoly("cb_2013_us_region_20m/cb_2013_us_region_20m.shp")
+setwd("../SAE/data_code/")
+shp <- readShapePoly("cb_2013_us_region_20m/cb_2013_us_region_20m.shp")
+plot(shp)
+shp <- readShapePoly("cb_2013_us_division_20m/cb_2013_us_division_20m.shp")
+shp <- readShapePoly("cb_2013_us_division_20m/cb_2013_us_division_20m.shp")
+plot(shp)
+shp_div <- readShapePoly("cb_2013_us_region_20m/cb_2013_us_region_20m.shp")
+shp_div <- readShapePoly("cb_2013_us_division_20m/cb_2013_us_division_20m.shp")
+head(shp_div)
+head(shp_div@data)
+nrow(shp_div@data)
+shp_div@data
+proj4string(shp_div) <- CRS("+init=epsg:4269 +proj=longlat +ellps=GRS80 +datum=NAD83 +no_defs +towgs84=0,0,0")
+shp_div_proj <- spTransform(shp_div, CRS("+init=epsg:3349"))
+plot(shp_div_proj)
+plot(shp_div_proj[1:5,])
+plot(shp_div_proj[1:6,])
+plot(shp_div_proj[-6,])
+mydata <- read.table(file="data2.txt", header=TRUE)#
+#
+Y <- mydata$y#
+m <- nrow(mydata)#
+X <- cbind(rep(1, m), mydata$x)#
+D <- mydata$D
+ctyid1 <- mydata$FIPS#
+#
+shp <- readShapePoly("cb_2013_us_county_20m/cb_2013_us_county_20m.shp")#
+shp_div <- readShapePoly("cb_2013_us_division_20m/cb_2013_us_division_20m.shp")
+CO <- as.character(shp@data$COUNTYFP)#
+ST <- as.character(shp@data$STATEFP)#
+ctyid2 <- as.numeric(paste(ST, CO, sep=""))#
+shp@data$FIPS <- ctyid2
+plotid <- match(ctyid1, ctyid2)
+shp2 <- shp[plotid,] # shape file that only contains 3141 counties; the plot order is the same as in data2.txt#
+#
+ak_id <- shp2@data$STATEFP=="02"#
+hi_id <- shp2@data$STATEFP=="15"#
+cont_id <- shp2@data$STATEFP!="02" & shp2@data$STATEFP!="15"
+proj4string(shp2) <- CRS("+init=epsg:4269 +proj=longlat +ellps=GRS80 +datum=NAD83 +no_defs +towgs84=0,0,0")#
+shp_proj <- spTransform(shp2, CRS("+init=epsg:3349"))#
+#
+proj4string(shp_div) <- CRS("+init=epsg:4269 +proj=longlat +ellps=GRS80 +datum=NAD83 +no_defs +towgs84=0,0,0")#
+shp_div_proj <- spTransform(shp_div, CRS("+init=epsg:3349"))
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))
+plot(shp_proj[cont_id,], lwd=0.5)
+plot(shp_div_proj[-6,])
+plot(shp_div_proj[-6,], add=TRUE)
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4
+plot(shp_proj[cont_id,], lwd=0.5)#
+plot(shp_div_proj[-6,], add=TRUE)
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))
+plot(shp_proj[cont_id,], lwd=0.5)#
+plot(shp_div_proj[-6,], add=TRUE)
+plot(shp_div_proj, add=TRUE)
+plot(shp_proj[cont_id,], lwd=0.5, col.border="grey")
+warnings()
+plot(shp_proj[cont_id,], lwd=0.5, col="grey")
+plot(shp_proj[cont_id,], lwd=0.5, border="grey")
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))
+plot(shp_proj[cont_id,], lwd=0.5, border="grey")
+plot(shp_div_proj, add=TRUE)
+load("data2_results.RData")
+LA_theta.est <- apply(X %*% LA_results$Beta.chain + LA_results$U.chain, 1, mean)#
+LA_U.est <- apply(LA_results$U.chain,1,mean)
+ncolors <- 50#
+plotclr <- heat.colors(ncolors, alpha = 1)#
+#
+plotvar <- c(LA_theta.est)#
+breakpoints <- quantile(plotvar, probs=seq(from=0, to=1, length=ncolors+1))#
+colornum <- findInterval(plotvar, breakpoints, all.inside=T)#
+colcode <- plotclr[colornum]
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.5, border="grey")#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.5)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+source("samplers_functions.R")
+source("samplers_functions.R")
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.5, border=FALSE)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.5)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.5, border=FALSE)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.5, border=FALSE)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.5, border=FALSE)#
+plot(shp_div_proj, add=TRUE)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE, lwd=2)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE, lwd=2)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE, lwd=2)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.2)#
+plot(shp_div_proj, add=TRUE, lwd=2.5)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+pdf(file = "theta_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=8)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout_mat[,8] <- 4#
+layout(layout_mat,widths=c(rep(1, 7), 0.3))#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+image.scale(z=plotclr, zlim=range(plotvar), col=plotclr, breaks=breakpoints, horiz=F)#
+dev.off()
+ncolors <- 9#
+#
+plotvar <- abs(LA_U.est)#
+breakpoints <- quantile(plotvar, probs=seq(from=0, to=1, length=ncolors+1))#
+plotclr <- rev(brewer.pal(ncolors, "OrRd"))#
+colornum <- findInterval(plotvar, breakpoints, all.inside=T)#
+colcode <- plotclr[colornum]#
+#
+pdf(file = "u_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=7)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout(layout_mat)#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+legend("bottomright",legend=leglabs(round(breakpoints,3)),fill=plotclr,bty="n", horiz=FALSE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+dev.off()
+library("RColorBrewer")
+ncolors <- 9#
+#
+plotvar <- abs(LA_U.est)#
+breakpoints <- quantile(plotvar, probs=seq(from=0, to=1, length=ncolors+1))#
+plotclr <- rev(brewer.pal(ncolors, "OrRd"))#
+colornum <- findInterval(plotvar, breakpoints, all.inside=T)#
+colcode <- plotclr[colornum]#
+#
+pdf(file = "u_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=7)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout(layout_mat)#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+legend("bottomright",legend=leglabs(round(breakpoints,3)),fill=plotclr,bty="n", horiz=FALSE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+dev.off()
+pdf(file = "u_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=7)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout(layout_mat)#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5, border="white")#
+legend("bottomright",legend=leglabs(round(breakpoints,3)),fill=plotclr,bty="n", horiz=FALSE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+dev.off()
+pdf(file = "u_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=7)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout(layout_mat)#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5, border="blue")#
+legend("bottomright",legend=leglabs(round(breakpoints,3)),fill=plotclr,bty="n", horiz=FALSE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+dev.off()
+pdf(file = "u_map1_all_EXP_div.pdf", width = 8, height = 5)#
+par(mar=c(1,1,1,1))#
+layout_mat <- matrix(1, nrow=6, ncol=7)#
+layout_mat[5:6,1:2] <- 2#
+layout_mat[6,3] <- 3#
+layout(layout_mat)#
+plot(shp_proj[cont_id,], col=colcode[cont_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+legend("bottomright",legend=leglabs(round(breakpoints,3)),fill=plotclr,bty="n", horiz=FALSE)#
+plot(shp_proj[ak_id,], col=colcode[ak_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+plot(shp_proj[hi_id,], col=colcode[hi_id], lwd=0.1)#
+plot(shp_div_proj, add=TRUE, lwd=1.5)#
+dev.off()

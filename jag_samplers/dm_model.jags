@@ -1,0 +1,28 @@
+
+model {
+  # 1) 관측식
+  for (i in 1:m) {
+    y[i] ~ dnorm(theta[i], prec.D[i])
+    prec.D[i] <- 1 / D[i]
+    mu[i] <- inprod(X[i,], beta[])  
+    theta[i] <- mu[i] + delta[i] * v[i]
+    
+    # 2) 혼합 랜덤효과: 지표 S, 슬랩 v
+    delta[i] ~ dbern(p)
+    v[i] ~ dnorm(0, prec.v)             
+  }
+
+  prec.v <- inv_sigma_v2
+
+  # 3) 사전분포 (proper priors)
+  for (j in 1:q) {
+    beta[j] ~ dunif(-1e+8, 1e+8)         # 약한 정규 사전 (또는 dflat())
+  }
+  p ~ dbeta(1, 4)          # c,d > 0
+  inv_sigma_v2 ~ dgamma(3, 1/(2*d_bar))     # a,b > 0  (Inv-Gamma on sigma_v^2)
+
+  # 4) 파생량
+  sigma_v2 <- 1.0 / inv_sigma_v2
+}
+
+

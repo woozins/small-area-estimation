@@ -1,0 +1,94 @@
+rm(list = ls())
+
+source('goral_data.R')
+source('sampling_functions/e2dist1.R')
+
+generate.data <- function(N, sigma, lam0, t){
+  xrange <- goral$xlim
+  yrange <-goral$ylim
+  X <- goral$X
+  S <- cbind(runif(N, xrange[1], xrange[2]), runif(N, yrange[1], yrange[2]))
+  dist <- e2dist1(X,S) # 각 카메라와 activity center 사이의 거리
+  lam <- lam0*exp(-(dist*dist)/(2*sigma*sigma))
+  lam <- (lam * (dist < 1))
+  lamv <- rowSums(lam)
+  n.generated <- t(sapply(lamv, function(l) rpois(t, lambda = l)))
+  test.data <- list(n=n.generated, X=X, J = nrow(n), K = ncol(n), xlim = xrange, ylim = yrange)
+  return(test.data)
+}
+
+
+params.list <- list(c(100,0.23, 0.1), c(100, 0.23, 0.2), c(100, 0.23, 0.3), c(100, 0.23, 0.4),
+                 c(200,0.23, 0.1), c(200, 0.23, 0.2), c(200, 0.23, 0.3), c(200, 0.23, 0.4),
+                 c(300,0.23, 0.1), c(300, 0.23, 0.2), c(300, 0.23, 0.3), c(300, 0.23, 0.4))
+
+
+#visualiztion
+# library(ggplot2)
+# 
+# ggplot()+
+#   geom_point(aes(x = S[,1], y = S[,2]) , color = 'red', size  = 3)+
+#   geom_point(aes(x = X[,1], y = X[,2]), shape = 18, size = 4, color = 'black')
+
+
+#estimation via rjmcmc algorithm
+library(parallel)
+# simulation settings:  1. method : Fixed RJ / Stochastic RJ 
+
+#test for adaptive MH step
+
+# source('sampling_functions/rjmcmc_truncated.R')
+source('sampling_functions/rjmcmc_truncated_both.R')
+source('sampling_functions/rjmcmc_truncated_both_uniform.R')
+# source('sampling_functions/rjmcmc_truncated_both_restrict_S.R')
+# source('sampling_functions/rjmcmc_truncated_both_restrict_S_uniform.R')
+
+for (params in params.list[2]){ # for some parameter setting
+  N <- params[1]
+  sigma <- params[2]
+  lam0 <- params[3]
+  
+  n_iter <- 300000
+  test.data <- generate.data(N, sigma, lam0, 88)
+  
+  task_list <- list(
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(1,0.002) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                        burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(3,5), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(1,0.002) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                        burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(2,8), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(1,0.002) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                        burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(1.5, 1.5), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(2,0.0055) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                        burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(3,5), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(2, 0.0055) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                        burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(2,8), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(2, 0.0055) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                        burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(1.5, 1.5), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(3, 0.005) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                       burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(3,5), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(3,0.005) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                      burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(2,8), check_point = FALSE, monitorS=FALSE)),
+    list(fun = function() rjmcmc_truncated_both(n =  test.data$n, X = test.data$X, N_prior =  c(3,0.005) , sigma_prior =  c('gamma', 6, 1/27), niters = n_iter, xlims = test.data$xlim, ylims = test.data$ylim,
+                                                      burn_in = 10000, init_delta = 10, init_tune=c(0.2, 0.05, 2), N_updates = 15, stochastic = TRUE, lam0_prior = c(1.5, 1.5), check_point = FALSE, monitorS=FALSE))
+  )
+
+task_list <- unlist(lapply(task_list, function(x) rep(list(x),3)), recursive = FALSE)
+
+cl <- makeCluster(20)
+clusterExport(cl, varlist = c('test.data','rjmcmc_truncated_both', 'e2dist1','n_iter'))
+
+# CHECK RESULTS
+savefile <- paste0('simulation_results/', 'N',  N, 'sigma', sigma, 'lam', lam0, '_', format(Sys.time(), "%d-%H-%M.RData"))
+
+results <- parLapply(cl, task_list, function(task) {
+  tryCatch({
+    task$fun()
+  }, error = function(e) {
+    message("Error in task: ", conditionMessage(e))
+    return(NA)  # 또는 NULL
+  })
+})
+
+save(results, file = savefile)
+stopCluster(cl)
+}

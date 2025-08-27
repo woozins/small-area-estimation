@@ -1,0 +1,26 @@
+{
+    "id": "4D954F04",
+    "path": "~/sae/samplers/lasso_sampler.R",
+    "project_path": "samplers/lasso_sampler.R",
+    "type": "r_source",
+    "hash": "2154733226",
+    "contents": "",
+    "dirty": false,
+    "created": 1756084255061.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "source_window_id": "wx1j609y8v2zh",
+        "Source": "Source",
+        "cursorPosition": "169,4",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1756104313,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1756104313091,
+    "read_only": false,
+    "read_only_alternatives": []
+}

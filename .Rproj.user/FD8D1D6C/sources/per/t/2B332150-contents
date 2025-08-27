@@ -1,0 +1,114 @@
+set.seed(123)
+library(coda)
+library(rjags)
+
+##################### GENERATE SAMPLE DATA ###############################################################
+# m <- 30                            # small areas
+# p <- 2                             # number of covariates
+# X <- cbind(1, rnorm(m))            # design matrix (intercept + one covariate)
+# true.beta <- c(5, 2)               # true beta
+# true.sigma2 <- 1.0                 # true area-level variance
+# true.v <- rnorm(m, sd = sqrt(true.sigma2))
+# true.theta <- X %*% true.beta + true.v
+# 
+# D <- runif(m, 0.5, 2.0)          # known sampling variances
+# Y <- rnorm(m, mean = true.theta, sd = sqrt(D))  # direct estimators
+# 
+# data <- list(X = X, Y = Y, D = D, u = true.v, theta = true.theta, beta = true.beta)
+##################### JAGS scripts ###############################################################
+
+glLA_model_string <- "
+model{
+  # Likelihood
+  for(i in 1:m){
+    y[i] ~ dnorm(theta[i], prec_e[i])      
+    
+    prec_e[i] = 1 / D[i]
+    theta[i] <- inprod(X[i,], beta[]) + v[i]
+
+    # Random effect with GL variance
+    v[i] ~ dnorm(0, 1 / (tau2 * lambda2[i]))   # Var = tau2*lambda2[i]
+    lambda2[i] ~ dexp(1)                       # π(λ_i^2) ∝ exp(-λ_i^2)  (Laplace 변환형)
+  }
+
+  # Coefficients
+  for(j in 1:q){
+    beta[j] ~ dunif(-1e+8, 1e+8)                # 약한 비정보 사전
+  }
+
+  # Global scale: 
+  # half-Cauchy on tau
+  tau ~ dt(0, 1/pow(A,2), 1) T(0,)             # half-Cauchy(scale=A)
+  tau2 <- pow(tau, 2)
+}
+"
+
+#모델 파일로 저장
+writeLines(glLA_model_string, con = "samplers/glLA_model.jags")
+##################### JAGS code and function ###############################################################
+func.glLA <- function(n_iter, burn_in ,data, a=1){
+  
+  data_list <- list(
+    y = as.numeric(data$Y),
+    D = data$D,
+    X  = data$X,
+    A = a,
+    m  = length(data$Y),
+    q  = ncol(data$X)
+  )
+  
+  # 1) 모델 파일로 저장
+  
+  # 2) 초기값 함수 (체인별로 약간씩 다르게 주면 수렴 진단에 유리)
+  inits <- function() {
+    list(
+      beta = rep(0, data_list$q)
+    )
+  }
+  
+  # 3) JAGS 모델 객체 생성
+  jags_mod <- jags.model(
+    file    = "samplers/glLA_model.jags",
+    data    = data_list,
+    inits   = inits,
+    n.chains= 3,
+    quiet   = TRUE
+  )
+  
+  # 4) 예열 (버닝) 단계
+  update(jags_mod, n.iter = burn_in)
+  
+  # 5) 사후표본 추출
+  params <- c("beta", "tau2", "theta")
+  coda_samples <- coda.samples(
+    model      = jags_mod,
+    variable.names = params,
+    n.iter     = n_iter,
+    thin       = 5
+  )
+  
+  
+  # 4) 소지역별 사후 추정값
+  theta_post <- do.call(rbind, lapply(coda_samples, function(x) as.matrix(x)[, grep("^theta\\[", colnames(x))]))
+  theta_mean <- apply(theta_post, 2, mean)
+  theta_ci   <- apply(theta_post, 2, quantile, probs = c(0.025, 0.975))
+  
+  samples <- list(theta = theta_mean, coverage = t(theta_ci), data = coda_samples)
+  return(samples)
+}
+
+# results <- func.glLA(50000, 1000, data)
+
+############### checking convergence #############################################################################
+# 1) 요약 통계
+# summary(results$data)
+# #
+# # # 2) 눈으로 확인: 트레이스플롯, 밀도플롯
+# plot(results$data)
+# #
+# # # 3) Gelman–Rubin 진단
+# gelman.diag(results$data)
+# 
+# data.frame(pred = results$theta,
+#            true = true.theta)
+###################################################################################################################

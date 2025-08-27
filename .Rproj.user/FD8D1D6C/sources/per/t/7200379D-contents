@@ -1,0 +1,25 @@
+
+model{
+  # Likelihood
+  for(i in 1:m){
+    y[i] ~ dnorm(theta[i], prec_e[i])      
+    
+    prec_e[i] = 1 / D[i]
+    theta[i] <- inprod(X[i,], beta[]) + v[i]
+
+    # Random effect with GL variance
+    v[i] ~ dnorm(0, 1 / (tau2 * lambda2[i]))   # Var = tau2*lambda2[i]
+    lambda2[i] ~ dexp(1)                       # π(λ_i^2) ∝ exp(-λ_i^2)  (Laplace 변환형)
+  }
+
+  # Coefficients
+  for(j in 1:q){
+    beta[j] ~ dunif(-1e+8, 1e+8)                # 약한 비정보 사전
+  }
+
+  # Global scale: 
+  # half-Cauchy on tau
+  tau ~ dt(0, 1/pow(A,2), 1) T(0,)             # half-Cauchy(scale=A)
+  tau2 <- pow(tau, 2)
+}
+

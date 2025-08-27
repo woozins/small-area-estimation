@@ -1,0 +1,23 @@
+
+model {
+  # 1) 관측식: 표본평균 yi와 오차분산 vi
+  for (i in 1:m) {
+    yi[i] ~ dnorm(theta[i], prec.e[i])
+    prec.e[i] <- 1/D[i]
+  }
+
+  # 2) 계층식: 잠재진실 theta[i]
+  for (i in 1:m) {
+    theta[i] ~ dnorm(mu[i], 1/sigma2.fh)
+    mu[i] <- inprod(X[i, ], beta[])
+  }
+
+  # 3) 회귀계수 베타에 비정보적 사전
+  for (j in 1:p) {
+    beta[j] ~ dunif(-1e+8, 1e+8)
+  }
+
+  # 4) 영역간 분산(σ_u^2)의 사전: 감마→정밀도 τ_u
+  sigma2.fh ~ dunif(0, 1e+8)
+}
+

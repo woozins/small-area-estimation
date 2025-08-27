@@ -1,0 +1,26 @@
+{
+    "id": "0D92B740",
+    "path": "~/sae/analysis/state_code.R",
+    "project_path": "analysis/state_code.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1756096928116.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "88,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1756102708,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1756102708209,
+    "read_only": false,
+    "read_only_alternatives": []
+}
